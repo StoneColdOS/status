@@ -25,7 +25,9 @@ A live "where's Ruben" page. Anyone with the link sees the current status update
 
 `esp32/StatusTerminal/StatusTerminal.ino` is a standalone version with no Wi-Fi, Firebase or web page. It shows a terminal-style screen with HERE / AWAY / BUSY / LUNCH buttons, a blinking cursor and a "for 00:12:34" timer since the last change. The last status is saved to flash and restored on boot.
 
-Setup: steps 1-3 and 5 of the CYD section below (no `secrets.h` needed). Libraries: TFT_eSPI and XPT2046_Touchscreen.
+First boot asks you to tap 3 crosses to calibrate touch. Hold a finger on the screen for 5 seconds to recalibrate later.
+
+To flash a prebuilt `.bin` with https://espressif.github.io/esptool-js/: connect, add the file at address `0x0`, Program. To build it yourself: steps 1-3 and 5 of the CYD section below (no `secrets.h` needed).
 
 ## One-time setup
 

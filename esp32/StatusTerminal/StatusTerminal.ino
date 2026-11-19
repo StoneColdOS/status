@@ -19,11 +19,9 @@
 #define XPT2046_CS   33
 #define BACKLIGHT    21
 
-// Raw touch range. If taps land on the wrong button, adjust these (see README).
-#define TOUCH_X_MIN 200
-#define TOUCH_X_MAX 3700
-#define TOUCH_Y_MIN 240
-#define TOUCH_Y_MAX 3800
+// Touch is calibrated on screen the first time it boots (tap 3 crosses).
+// To recalibrate later, hold a finger anywhere on the screen for 5 seconds.
+#define RECAL_HOLD_MS 5000
 
 SPIClass touchSPI(VSPI);
 XPT2046_Touchscreen ts(XPT2046_CS, XPT2046_IRQ);
@@ -143,6 +141,88 @@ void drawButtons() {
   tft.setTextDatum(TL_DATUM);
 }
 
+// ---------- Touch calibration ----------
+// Maps raw touch readings to screen pixels from 3 taps (top-left, top-right, bottom-left).
+// Handles flipped or swapped axes, so it works whichever way the panel is wired.
+
+struct Cal { bool swap; float a0, sx, b0, sy; } cal;
+const int CAL_M = 24;  // cross distance from the screen edge
+
+void drawCross(int x, int y, uint16_t c) {
+  tft.drawFastHLine(x - 10, y, 21, c);
+  tft.drawFastVLine(x, y - 10, 21, c);
+  tft.drawCircle(x, y, 4, c);
+}
+
+TS_Point readRawTap() {
+  while (!ts.touched()) delay(5);
+  long sx = 0, sy = 0; int n = 0;
+  unsigned long start = millis();
+  while (ts.touched() && millis() - start < 400) {
+    TS_Point p = ts.getPoint();
+    if (p.z > 200) { sx += p.x; sy += p.y; n++; }
+    delay(10);
+  }
+  while (ts.touched()) delay(10);
+  delay(250);
+  TS_Point r;
+  r.x = n ? sx / n : 0; r.y = n ? sy / n : 0; r.z = n;
+  return r;
+}
+
+void runCalibration() {
+  const int tx[3] = { CAL_M, 320 - CAL_M, CAL_M };
+  const int ty[3] = { CAL_M, CAL_M, 240 - CAL_M };
+  const char* names[3] = { "top-left", "top-right", "bottom-left" };
+  TS_Point raw[3];
+
+  while (ts.touched()) delay(10);
+  for (int i = 0; i < 3; i++) {
+    tft.fillScreen(C_BG);
+    tft.setTextFont(1);
+    tft.setTextSize(2);
+    tft.setTextDatum(MC_DATUM);
+    tft.setTextColor(C_TEXT, C_BG);
+    tft.drawString("> touch calibration", 160, 100);
+    tft.setTextSize(1);
+    tft.setTextColor(C_DIM, C_BG);
+    tft.drawString(String("tap the ") + names[i] + " cross", 160, 128);
+    tft.setTextDatum(TL_DATUM);
+    drawCross(tx[i], ty[i], STATUSES[0].color);
+    do { raw[i] = readRawTap(); } while (raw[i].z == 0);
+  }
+
+  // Which raw axis moves when going left -> right on screen?
+  cal.swap = abs(raw[1].y - raw[0].y) > abs(raw[1].x - raw[0].x);
+  float aTL = cal.swap ? raw[0].y : raw[0].x, aTR = cal.swap ? raw[1].y : raw[1].x;
+  float bTL = cal.swap ? raw[0].x : raw[0].y, bBL = cal.swap ? raw[2].x : raw[2].y;
+  if (aTR == aTL) aTR = aTL + 1;
+  if (bBL == bTL) bBL = bTL + 1;
+  cal.sx = (float)(tx[1] - tx[0]) / (aTR - aTL);
+  cal.a0 = aTL - tx[0] / cal.sx;
+  cal.sy = (float)(ty[2] - ty[0]) / (bBL - bTL);
+  cal.b0 = bTL - ty[0] / cal.sy;
+
+  prefs.putBytes("cal", &cal, sizeof(cal));
+}
+
+bool loadCalibration() {
+  return prefs.getBytes("cal", &cal, sizeof(cal)) == sizeof(cal) && cal.sx != 0 && cal.sy != 0;
+}
+
+void rawToScreen(const TS_Point& p, int& x, int& y) {
+  float a = cal.swap ? p.y : p.x;
+  float b = cal.swap ? p.x : p.y;
+  x = constrain((int)((a - cal.a0) * cal.sx), 0, 319);
+  y = constrain((int)((b - cal.b0) * cal.sy), 0, 239);
+}
+
+void redrawAll() {
+  drawFrame();
+  drawStatus();
+  drawButtons();
+}
+
 // ---------- Touch ----------
 
 int buttonAt(int x, int y) {
@@ -165,10 +245,19 @@ void setStatus(int i) {
 void handleTouch() {
   if (!ts.tirqTouched() || !ts.touched()) return;
   TS_Point p = ts.getPoint();
-  int x = constrain(map(p.x, TOUCH_X_MIN, TOUCH_X_MAX, 0, 320), 0, 319);
-  int y = constrain(map(p.y, TOUCH_Y_MIN, TOUCH_Y_MAX, 0, 240), 0, 239);
-  // Serial.printf("raw %d,%d -> %d,%d\n", p.x, p.y, x, y);  // uncomment to calibrate
-  while (ts.touched()) delay(10);  // wait for release
+  if (p.z < 200) return;  // too light, ignore
+  int x, y;
+  rawToScreen(p, x, y);
+
+  unsigned long pressed = millis();
+  while (ts.touched()) {  // wait for release; a long hold recalibrates
+    if (millis() - pressed > RECAL_HOLD_MS) {
+      runCalibration();
+      redrawAll();
+      return;
+    }
+    delay(10);
+  }
 
   int i = buttonAt(x, y);
   if (i >= 0 && i != currentIdx) setStatus(i);
@@ -193,9 +282,8 @@ void setup() {
   if (currentIdx >= NUM) currentIdx = 0;
   setAt = millis();
 
-  drawFrame();
-  drawStatus();
-  drawButtons();
+  if (!loadCalibration()) runCalibration();
+  redrawAll();
 }
 
 void loop() {
