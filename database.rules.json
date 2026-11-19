@@ -1,0 +1,15 @@
+{
+  "rules": {
+    "status": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === 'PASTE_YOUR_UID'",
+      ".validate": "newData.hasChildren(['key', 'updatedAt'])",
+      "key": { ".validate": "newData.isString() && newData.val().matches(/^(in|focus|meeting|lunch|dnd|out)$/)" },
+      "headline": { ".validate": "newData.isString() && newData.val().length <= 60" },
+      "note": { ".validate": "newData.isString() && newData.val().length <= 200" },
+      "back": { ".validate": "newData.isString() && newData.val().length <= 40" },
+      "updatedAt": { ".validate": "newData.isNumber()" },
+      "$other": { ".validate": false }
+    }
+  }
+}

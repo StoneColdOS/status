@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ruben's Status</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0c12;
+    --panel: #15141c;
+    --line: #26242f;
+    --text: #f2f0f7;
+    --muted: #8e8a9c;
+    --accent: #4ade80;
+    --accent-soft: rgba(74,222,128,.12);
+  }
+  body[data-tone="green"]  { --accent: #4ade80; --accent-soft: rgba(74,222,128,.12); }
+  body[data-tone="amber"]  { --accent: #fbbf24; --accent-soft: rgba(251,191,36,.12); }
+  body[data-tone="blue"]   { --accent: #60a5fa; --accent-soft: rgba(96,165,250,.12); }
+  body[data-tone="red"]    { --accent: #f87171; --accent-soft: rgba(248,113,113,.12); }
+  body[data-tone="violet"] { --accent: #a78bfa; --accent-soft: rgba(167,139,250,.12); }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background: radial-gradient(900px 500px at 50% -10%, var(--accent-soft), transparent 70%), var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 56px 20px 40px;
+  }
+  .wrap { width: 100%; max-width: 520px; }
+
+  header { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 18px; }
+  header svg { width: 18px; height: 18px; color: var(--accent); transition: color .4s; }
+
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 36px 32px 28px; box-shadow: 0 24px 60px rgba(0,0,0,.45); }
+  .chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 13px; font-weight: 600; letter-spacing: .02em; transition: color .4s, background .4s; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); position: relative; }
+  .dot::after { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid var(--accent); opacity: 0; animation: ping 2.2s infinite; }
+  @keyframes ping { 0% { transform: scale(.6); opacity: .7; } 100% { transform: scale(1.6); opacity: 0; } }
+
+  h1 { font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-size: clamp(32px, 8vw, 44px); line-height: 1.08; letter-spacing: -.01em; margin: 18px 0 12px; overflow-wrap: anywhere; }
+  .note { color: #c9c5d6; font-size: 16px; line-height: 1.55; overflow-wrap: anywhere; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+  .meta b { color: var(--text); font-weight: 500; }
+  .meta span:empty { display: none; }
+
+  .panel { display: none; margin-top: 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 22px; }
+  .panel.show { display: block; }
+  .panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+  .link { background: none; border: 0; color: var(--muted); font: 500 12px 'Inter', sans-serif; cursor: pointer; text-transform: none; letter-spacing: 0; text-decoration: underline; }
+  .presets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+  .preset { font: 500 13px 'Inter', sans-serif; color: var(--text); background: #1d1c26; border: 1px solid var(--line); border-radius: 999px; padding: 7px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: border-color .15s, background .15s; }
+  .preset:hover { border-color: #3a3746; }
+  .preset.active { border-color: var(--accent); background: var(--accent-soft); }
+  .preset i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  label { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 6px; font-weight: 500; }
+  input, textarea { width: 100%; font: 15px 'Inter', sans-serif; color: var(--text); background: #0f0e15; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; outline: none; transition: border-color .15s; }
+  textarea { resize: vertical; min-height: 64px; line-height: 1.45; }
+  input:focus, textarea:focus { border-color: var(--accent); }
+  .row { display: flex; gap: 10px; align-items: center; margin-top: 18px; }
+  .btn { flex: 1; padding: 12px 16px; border-radius: 10px; border: 0; cursor: pointer; font: 600 15px 'Inter', sans-serif; color: #0d0c12; background: var(--accent); transition: filter .15s, transform .1s; }
+  .btn:hover { filter: brightness(1.08); }
+  .btn:active { transform: scale(.99); }
+  .btn:disabled { opacity: .55; cursor: wait; }
+  .msg { font-size: 13px; color: var(--muted); min-width: 70px; text-align: right; }
+  .msg.err { color: #fca5a5; }
+
+  footer { margin-top: 28px; font-size: 12px; color: #5d5a6b; text-align: center; }
+</style>
+</head>
+<body data-tone="green">
+<div class="wrap">
+  <header>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+    Ruben &middot; IT Department
+  </header>
+
+  <main class="card">
+    <span class="chip"><span class="dot"></span><span id="chipText">Available</span></span>
+    <h1 id="headline">Ruben Is In</h1>
+    <p class="note" id="note">Ask away. Yes, I've already tried turning it off and on again.</p>
+    <div class="meta">
+      <span id="back"></span>
+      <span id="since"></span>
+    </div>
+  </main>
+
+  <!-- Sign-in: only shown at /#admin when signed out -->
+  <section class="panel" id="login">
+    <h2>Sign in to edit</h2>
+    <form id="loginForm">
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="username" required>
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+      <div class="row">
+        <button class="btn" type="submit">Sign in</button>
+        <span class="msg" id="loginMsg"></span>
+      </div>
+    </form>
+  </section>
+
+  <!-- Editor: only shown when signed in -->
+  <section class="panel" id="editor">
+    <h2>Update status <button class="link" id="signOut" type="button">Sign out</button></h2>
+    <div class="presets" id="presets"></div>
+    <label for="fHeadline">Headline</label>
+    <input id="fHeadline" maxlength="60">
+    <label for="fNote">Note</label>
+    <textarea id="fNote" maxlength="200"></textarea>
+    <label for="fBack">Back by (optional)</label>
+    <input id="fBack" maxlength="40" placeholder="e.g. 2:30 PM, Monday, when the coffee kicks in">
+    <div class="row">
+      <button class="btn" id="save" type="button">Save status</button>
+      <span class="msg" id="msg"></span>
+    </div>
+  </section>
+
+  <footer>Anything urgent? Submit a ticket. It's faster than finding me.</footer>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, onValue, set, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { firebaseConfig } from "./firebase-config.js";
+
+  // Keep these in sync with PRESETS in esp32/StatusBoard/StatusBoard.ino
+  const PRESETS = [
+    { key: 'in',      tone: 'green',  chip: 'Available',      headline: 'Ruben Is In',    note: "Ask away. Yes, I've already tried turning it off and on again." },
+    { key: 'focus',   tone: 'violet', chip: 'Focused',        headline: 'Heads Down',     note: 'Deep in a project. Emergencies only, please.' },
+    { key: 'meeting', tone: 'blue',   chip: 'In a meeting',   headline: 'In a Meeting',   note: 'Probably one that could have been an email.' },
+    { key: 'lunch',   tone: 'amber',  chip: 'At lunch',       headline: 'Out to Lunch',   note: 'Refueling. Back soon.' },
+    { key: 'dnd',     tone: 'red',    chip: 'Do not disturb', headline: 'Do Not Disturb', note: 'Unless something is actually on fire.' },
+    { key: 'out',     tone: 'red',    chip: 'Away',           headline: 'Ruben Is Out',   note: "Submit a ticket and it'll be waiting for me." },
+  ];
+  const byKey = Object.fromEntries(PRESETS.map(p => [p.key, p]));
+  const toneColor = { green: '#4ade80', amber: '#fbbf24', blue: '#60a5fa', red: '#f87171', violet: '#a78bfa' };
+
+  const $ = id => document.getElementById(id);
+  const els = { chip: $('chipText'), headline: $('headline'), note: $('note'), back: $('back'), since: $('since') };
+  const form = { headline: $('fHeadline'), note: $('fNote'), back: $('fBack') };
+  let current = { key: 'in', headline: byKey.in.headline, note: byKey.in.note };
+  let selectedKey = 'in';
+  let dirty = false;
+
+  function fmtTime(ms) {
+    const t = new Date(ms);
+    const sameDay = t.toDateString() === new Date().toDateString();
+    return t.toLocaleString([], sameDay ? { hour: 'numeric', minute: '2-digit' }
+      : { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }
+
+  function render(state) {
+    const p = byKey[state.key] || byKey.in;
+    document.body.dataset.tone = p.tone;
+    els.chip.textContent = p.chip;
+    els.headline.textContent = state.headline || p.headline;
+    els.note.textContent = state.note ?? p.note;
+    els.back.textContent = '';
+    if (state.back) { els.back.append('Back by '); const b = document.createElement('b'); b.textContent = state.back; els.back.append(b); }
+    els.since.textContent = typeof state.updatedAt === 'number' ? 'Updated ' + fmtTime(state.updatedAt) : '';
+  }
+
+  function markPreset() {
+    document.querySelectorAll('.preset').forEach(b => b.classList.toggle('active', b.dataset.key === selectedKey));
+  }
+
+  function fillForm(state) {
+    selectedKey = byKey[state.key] ? state.key : 'in';
+    form.headline.value = state.headline || '';
+    form.note.value = state.note || '';
+    form.back.value = state.back || '';
+    markPreset();
+    dirty = false;
+  }
+
+  function preview() {
+    render({ key: selectedKey, headline: form.headline.value, note: form.note.value, back: form.back.value, updatedAt: current.updatedAt });
+  }
+
+  PRESETS.forEach(p => {
+    const b = document.createElement('button');
+    b.className = 'preset'; b.dataset.key = p.key; b.type = 'button';
+    const i = document.createElement('i'); i.style.background = toneColor[p.tone];
+    b.append(i, p.chip);
+    b.onclick = () => {
+      selectedKey = p.key;
+      form.headline.value = p.headline;
+      form.note.value = p.note;
+      if (p.key === 'in') form.back.value = '';
+      markPreset(); dirty = true; preview();
+    };
+    $('presets').appendChild(b);
+  });
+  Object.values(form).forEach(f => f.addEventListener('input', () => { dirty = true; preview(); }));
+
+  render(current);
+  fillForm(current);
+
+  if (!firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith('PASTE')) {
+    console.warn('firebase-config.js is not filled in yet. Showing the default status.');
+  } else {
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+    const statusRef = ref(db, 'status');
+
+    onValue(statusRef, snap => {
+      const data = snap.val();
+      current = data || { key: 'in', headline: byKey.in.headline, note: byKey.in.note };
+      render(current);
+      if (!dirty) fillForm(current);
+    }, () => { els.since.textContent = "Couldn't load the latest status."; });
+
+    function updatePanels(user) {
+      $('editor').classList.toggle('show', !!user);
+      $('login').classList.toggle('show', !user && location.hash === '#admin');
+    }
+    onAuthStateChanged(auth, updatePanels);
+    window.addEventListener('hashchange', () => updatePanels(auth.currentUser));
+
+    $('loginForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const m = $('loginMsg');
+      m.className = 'msg'; m.textContent = 'Signing in…';
+      try {
+        await signInWithEmailAndPassword(auth, $('email').value.trim(), $('password').value);
+        m.textContent = '';
+        $('password').value = '';
+      } catch {
+        m.className = 'msg err'; m.textContent = 'Sign-in failed';
+      }
+    });
+
+    $('signOut').onclick = () => signOut(auth);
+
+    $('save').onclick = async () => {
+      const btn = $('save'), msg = $('msg');
+      const next = {
+        key: selectedKey,
+        headline: form.headline.value.trim() || byKey[selectedKey].headline,
+        note: form.note.value.trim(),
+        back: form.back.value.trim(),
+        updatedAt: serverTimestamp(),
+      };
+      btn.disabled = true; msg.className = 'msg'; msg.textContent = 'Saving…';
+      try {
+        await set(statusRef, next);
+        dirty = false;
+        msg.textContent = 'Saved';
+        setTimeout(() => { if (msg.textContent === 'Saved') msg.textContent = ''; }, 2000);
+      } catch {
+        msg.className = 'msg err'; msg.textContent = "Couldn't save";
+      } finally {
+        btn.disabled = false;
+      }
+    };
+  }
+</script>
+</body>
+</html>
