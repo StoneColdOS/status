@@ -21,6 +21,12 @@ A live "where's Ruben" page. Anyone with the link sees the current status update
 - **The CYD** checks the record every 3 seconds and redraws if it changed. Tapping a button writes a new status, which every open web page picks up within a second.
 - **Security**: the database rules allow writes only from your Firebase login. The web page and the CYD sign in as that same user.
 
+## Offline option: Status Terminal (CYD only)
+
+`esp32/StatusTerminal/StatusTerminal.ino` is a standalone version with no Wi-Fi, Firebase or web page. It shows a terminal-style screen with HERE / AWAY / BUSY / LUNCH buttons, a blinking cursor and a "for 00:12:34" timer since the last change. The last status is saved to flash and restored on boot.
+
+Setup: steps 1-3 and 5 of the CYD section below (no `secrets.h` needed). Libraries: TFT_eSPI and XPT2046_Touchscreen.
+
 ## One-time setup
 
 ### 1. Firebase (about 5 minutes)
